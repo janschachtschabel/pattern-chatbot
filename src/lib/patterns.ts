@@ -196,6 +196,16 @@ export const PATTERNS: Pattern[] = [
     triggerPersonas: ['P-LK', 'P-ELT'],
     triggerIntents:  ['INT-W-03b'],
   },
+  {
+    id: 'PAT-19', label: 'Unterrichts-Lernpfad',
+    trigger: 'Persona: P-LK · Intent: INT-W-10 — Stundenentwurf, Unterrichtsplanung, Lernpfad mit didaktischer Struktur und WLO-Materialien gewünscht',
+    coreRule: 'Ablauf: (1) search_wlo_collections für Thema/Fach → beste Sammlung identifizieren. (2) generate_learning_path aufrufen → strukturierter Stundenentwurf. Ausgabe-Format: 🎯 Lernziele (3–5, messbar) | ⏱ Phasierung (Einstieg/Erarbeitung/Vertiefung/Sicherung mit Zeitangaben) | 📚 Methoden + WLO-Materialien (Links) pro Phase | 📝 Lehrerhinweise. (3) BINNENDIFFERENZIERUNG: Falls Teilgruppen erwähnt (z.B. DaZ, LRS, Hochbegabte, Niveaustufen A/B/C) → pro Teilgruppe eigenen Abschnitt mit angepassten Aufgaben, Materialien und Methoden. Ohne Angabe: kurzen "Differenzierungshinweis" am Ende anhängen (einfach/mittel/schwer).',
+    length: 'lang',
+    triggerSignals:  ['zielgerichtet', 'erfahren', 'zeitdruck', 'effizient'],
+    triggerStates:   ['state-6', 'state-7', 'state-8'],
+    triggerPersonas: ['P-LK'],
+    triggerIntents:  ['INT-W-10', 'INT-W-03b'],
+  },
 ];
 
 export const PATTERN_IDS = PATTERNS.map(p => p.id);

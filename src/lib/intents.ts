@@ -100,6 +100,15 @@ export const INTENTS: Intent[] = [
     degradation: 'Verfügbare Statistiken aus WLO-Projektseite zeigen',
     tools: ['get_wirlernenonline_info', 'get_edu_sharing_network_info', 'get_edu_sharing_product_info', 'get_metaventis_info'],
   },
+  {
+    id: 'INT-W-10', label: 'Unterrichtsplanung / Lernpfad',
+    description: 'Detaillierten Stundenentwurf mit Lernzielen, Zeitangaben, didaktischen Hinweisen und WLO-Materialien erstellen. Binnendifferenzierung für Teilgruppen auf Anfrage.',
+    mainPersonas: ['P-LK'],
+    cluster: 'planning',
+    preconditions: ['Fach oder Thema bekannt'],
+    degradation: 'Erst Themenseite per search_wlo_collections suchen, dann Lernpfad-Angebot machen',
+    tools: ['search_wlo_collections', 'generate_learning_path'],
+  },
 ];
 
 export const INTENT_IDS = INTENTS.map(i => i.id);

@@ -26,7 +26,7 @@ export interface Intent {
   label: string;
   description: string;
   mainPersonas: string[];
-  cluster: 'info' | 'klarung' | 'discovery' | 'search' | 'feedback' | 'routing' | 'meta';
+  cluster: 'info' | 'klarung' | 'discovery' | 'search' | 'feedback' | 'routing' | 'meta' | 'planning';
   preconditions: string[];
   degradation: string;
   tools: string[];
@@ -51,7 +51,7 @@ export interface Pattern {
   label: string;
   trigger: string;
   coreRule: string;
-  length: 'kurz' | 'mittel' | 'normal' | 'bullet-liste';
+  length: 'kurz' | 'mittel' | 'normal' | 'bullet-liste' | 'lang';
   triggerSignals: string[];
   triggerStates: string[];
   triggerPersonas: string[];

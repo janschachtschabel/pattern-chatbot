@@ -5,7 +5,7 @@ import { parseWloCards } from '@/lib/parseWloCards';
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: Request) {
-  const { nodeId, title } = (await req.json()) as { nodeId: string; title: string };
+  const { nodeId, title, differenzierung } = (await req.json()) as { nodeId: string; title: string; differenzierung?: string };
 
   if (!nodeId) {
     return Response.json({ error: 'nodeId fehlt' }, { status: 400 });
@@ -24,20 +24,30 @@ export async function POST(req: Request) {
     return Response.json({ error: `Keine Inhalte in „${title}" gefunden.` }, { status: 404 });
   }
 
-  // 2. Materialliste für LLM-Prompt aufbauen
+  // 2. Materialliste für LLM-Prompt aufbauen (mit verlinkbarer URL)
   const materialList = cards.map((c, i) => {
+    const link = c.url || c.wloUrl || '';
     const types = c.learningResourceTypes.length ? ` [${c.learningResourceTypes.join(', ')}]` : '';
-    const desc  = c.description ? ` – ${c.description.slice(0, 120)}` : '';
-    return `${i + 1}. **${c.title}**${types}${desc}`;
+    const desc  = c.description ? ` – ${c.description.slice(0, 100)}` : '';
+    const urlHint = link ? `[${c.title}](${link})` : c.title;
+    return `${i + 1}. ${urlHint}${types}${desc}`;
   }).join('\n');
 
+  const diffHint = differenzierung
+    ? `\n\nBINNENDIFFERENZIERUNG gewünscht für: ${differenzierung}. Füge nach dem Hauptplan für jede Teilgruppe einen separaten Abschnitt ein (z.B. "## Differenzierung: DaZ") mit angepassten Materialien und Methoden.`
+    : `\n\nFüge am Ende einen kurzen **Differenzierungshinweis** ein mit je 1 Empfehlung für "Basis", "Standard" und "Erweiterung".`;
+
   const userPrompt =
-    `Erstelle einen strukturierten Lernpfad für das Thema „${title}" ` +
+    `Erstelle einen strukturierten Stundenentwurf/Lernpfad für das Thema „${title}“ ` +
     `auf Basis der folgenden Materialien aus der WLO-Sammlung:\n\n${materialList}\n\n` +
-    `Strukturiere die Materialien in sinnvolle Lernschritte ` +
-    `(z. B. Einstieg → Erarbeitung → Vertiefung → Anwendung/Abschluss). ` +
-    `Erkläre pro Schritt kurz, welches Material eingesetzt wird und warum es an dieser Stelle passt. ` +
-    `Antworte auf Deutsch, halte dich kurz und prägnant.`;
+    `PFLICHT-FORMAT:\n` +
+    `### Lernziele (3–5, messbar, Verben wie „erklären, anwenden, unterscheiden“)\n` +
+    `### Phasierung (Einstieg → Erarbeitung → Vertiefung → Sicherung)\n` +
+    `- Pro Phase: Zeitangabe (z.B. 10 Min.), Methode, eingesetztes Material ALS MARKDOWN-LINK: [Titel](URL)\n` +
+    `- Verwende IMMER die bereitgestellten URLs als klickbare Links!\n` +
+    `### Lehrerhinweise (kurze didaktische Hinweise pro Phase)\n` +
+    diffHint +
+    `\n\nAntworte auf Deutsch.`;
 
   // 3. SSE-Stream: erst Kacheln, dann LLM-Text
   const encoder = new TextEncoder();

@@ -240,6 +240,26 @@ export default function Home() {
     }]);
     setIsLoading(true);
 
+    // Synthetic debug state: INT-W-10 / PAT-19
+    const lcpMcpId = `lp-${Date.now()}`;
+    setDebug(prev => ({
+      ...prev,
+      status: 'executing',
+      mcpCalls: [{ id: lcpMcpId, tool: 'generate_learning_path', args: { nodeId, title }, status: 'pending' }],
+      input: {
+        persona:  { id: currentPersonaRef.current, label: currentPersonaRef.current, confidence: 1.0 },
+        signals:  { active: signalHistoryRef.current, byDimension: { d1_time: [], d2_competence: [], d3_attitude: [], d4_context: [] } },
+        context:  { page: 'themenseite', session: 'returning', thema: title, preconditions_met: ['Sammlung bekannt'], preconditions_missing: [] },
+        intent:   { id: 'INT-W-10', label: 'Unterrichtsplanung / Lernpfad', confidence: 1.0, degradation_active: false },
+        state:    { id: 'state-7', label: 'Vertiefung & Synthese', cluster: 'B' },
+      },
+      output: {
+        pattern: { id: 'PAT-19', label: 'Unterrichts-Lernpfad', style_notes: 'Stundenentwurf mit Lernzielen, Phasierung, Materiallinks und Differenzierung' },
+        content: { type: 'Lernpfad', max_results: 10, degradation_active: false },
+        tools:   [{ name: 'get_collection_contents', reason: 'Sammlungsinhalte laden', status: 'pending' }, { name: 'generate_learning_path', reason: 'Lernpfad strukturieren', status: 'pending' }],
+      },
+    }));
+
     try {
       const res = await fetch('/api/learning-path', {
         method: 'POST',
@@ -266,11 +286,16 @@ export default function Home() {
             if (event.type === 'cards') {
               setMessages(prev => prev.map(m =>
                 m.id === botId ? { ...m, wloCards: event.data } : m));
+              setDebug(prev => ({ ...prev, mcpCalls: prev.mcpCalls.map(c => ({ ...c, status: 'done' as const })) }));
             }
             if (event.type === 'content') {
               botText += event.delta;
               setMessages(prev => prev.map(m =>
                 m.id === botId ? { ...m, content: botText } : m));
+              setDebug(prev => ({ ...prev, status: 'generating' }));
+            }
+            if (event.type === 'done') {
+              setDebug(prev => ({ ...prev, status: 'done' }));
             }
             if (event.type === 'error') throw new Error(event.message);
           } catch { /* malformed line – skip */ }

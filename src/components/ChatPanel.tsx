@@ -103,6 +103,7 @@ const STARTERS: { emoji: string; persona: string; pattern: string; text: string 
   { emoji: '🏛️',          persona: 'Verwaltung', pattern: 'PAT-10', text: 'Wie viele Materialien gibt es auf WLO – Zahlen und Fakten für eine Präsentation' },
   { emoji: '🔬',          persona: 'Berater:in', pattern: 'PAT-15', text: 'Welche OER-Plattformen gibt es in Deutschland – Vergleich mit WLO?' },
   { emoji: '✏️',          persona: 'Redaktion',  pattern: 'PAT-09', text: 'Ich kuratiere Inhalte für WLO – welche Themenseiten gibt es zu Biologie und wo fehlen noch Inhalte?' },
+  { emoji: '🗺️',          persona: 'Lehrkraft',  pattern: 'PAT-19', text: 'Erstelle mir einen Stundenentwurf für Dezimalzahlen Klasse 6 – mit Lernzielen, Phasen und Binnendifferenzierung' },
   { emoji: '🧭',          persona: 'Neu hier',   pattern: 'PAT-17', text: 'Was ist WLO und was kann ich hier finden?' },
 ];
 
