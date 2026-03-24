@@ -97,12 +97,12 @@ function TypingDot() {
 
 const STARTERS: { emoji: string; persona: string; pattern: string; text: string }[] = [
   { emoji: '👩\u200d🏫', persona: 'Lehrkraft',   pattern: 'PAT-04', text: 'Welche Themenseiten gibt es auf WLO zum Thema Optik?' },
-  { emoji: '👩\u200d🏫', persona: 'Lehrkraft',   pattern: 'PAT-18', text: 'Ich brauche für morgen etwas zu Bruchrechnung, Klasse 6 – was gibt es auf WLO?' },
+  { emoji: '👩\u200d🏫', persona: 'Lehrkraft',   pattern: 'PAT-18', text: 'Ich brauche für morgen etwas zu Addition, Klasse 3 – was gibt es auf WLO?' },
   { emoji: '🎒',          persona: 'Lerner:in',  pattern: 'PAT-13', text: 'Ich verstehe Prozentrechnung nicht – gibt es auf WLO Videos die das erklären?' },
   { emoji: '👨\u200d👧',  persona: 'Elternteil', pattern: 'PAT-14', text: 'Mein Kind (3. Klasse) soll in den Ferien Englisch üben – was empfiehlst du?' },
   { emoji: '🏛️',          persona: 'Verwaltung', pattern: 'PAT-10', text: 'Wie viele Materialien gibt es auf WLO – Zahlen und Fakten für eine Präsentation' },
   { emoji: '🔬',          persona: 'Berater:in', pattern: 'PAT-15', text: 'Welche OER-Plattformen gibt es in Deutschland – Vergleich mit WLO?' },
-  { emoji: '✏️',          persona: 'Redaktion',  pattern: 'PAT-16', text: 'Ich habe Biologie-Arbeitsblätter erstellt – wie kann ich sie auf WLO veröffentlichen?' },
+  { emoji: '✏️',          persona: 'Redaktion',  pattern: 'PAT-09', text: 'Ich kuratiere Inhalte für WLO – welche Themenseiten gibt es zu Biologie und wo fehlen noch Inhalte?' },
   { emoji: '🧭',          persona: 'Neu hier',   pattern: 'PAT-17', text: 'Was ist WLO und was kann ich hier finden?' },
 ];
 
@@ -144,19 +144,19 @@ export default function ChatPanel({ messages, isLoading, input, onInputChange, o
                 Persona · Signal · Kontext · Intent · State → Pattern
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-4 w-full max-w-sm">
+            <div className="grid grid-cols-2 gap-3 mt-4 w-full max-w-2xl">
               {STARTERS.map(s => (
                 <button
                   key={s.text}
                   onClick={() => { onInputChange(s.text); onSend(s.text); }}
-                  className="text-left bg-[#1a1d27] border border-[#2e3348] rounded-lg p-2.5 hover:border-indigo-600 transition-colors group"
+                  className="text-left bg-[#1a1d27] border border-[#2e3348] rounded-lg p-3.5 hover:border-indigo-600 transition-colors group"
                 >
-                  <div className="flex items-center gap-1 mb-1">
-                    <span className="text-[11px]">{s.emoji}</span>
-                    <span className="text-[10px] font-medium text-slate-500 group-hover:text-indigo-400 transition-colors">{s.persona}</span>
-                    <span className="ml-auto text-[9px] font-mono text-slate-600 group-hover:text-indigo-600 transition-colors">{s.pattern}</span>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-sm">{s.emoji}</span>
+                    <span className="text-xs font-medium text-slate-500 group-hover:text-indigo-400 transition-colors">{s.persona}</span>
+                    <span className="ml-auto text-[10px] font-mono text-slate-600 group-hover:text-indigo-600 transition-colors">{s.pattern}</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 group-hover:text-slate-200 transition-colors leading-snug">{s.text}</p>
+                  <p className="text-sm text-slate-400 group-hover:text-slate-200 transition-colors leading-snug">{s.text}</p>
                 </button>
               ))}
             </div>

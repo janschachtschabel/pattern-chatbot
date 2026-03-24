@@ -83,7 +83,7 @@ const TOOLS: OpenAI.ChatCompletionTool[] = [
           context_node_id:     { type: 'string', description: 'Node-ID falls bekannt' },
           preconditions_met:   { type: 'array', items: { type: 'string' }, description: 'Erfüllte Preconditions' },
           preconditions_missing: { type: 'array', items: { type: 'string' }, description: 'Fehlende Preconditions' },
-          intent_id:           { type: 'string', enum: INTENT_IDS, description: 'Primärer Intent' },
+          intent_id:           { type: 'string', enum: INTENT_IDS, description: 'Primärer Intent. KLASSIFIKATIONSREGELN: (1) INT-W-01 bei Plattform-Infofragen: "Was ist WLO?", "was kann ich hier finden", "wer betreibt WLO", Projektinfos. (2) INT-W-03c wenn Nutzer explizit MEDIENTYP nennt: "Videos", "Arbeitsblätter", "Quizze", "Podcasts", "interaktive Übungen", "erklärende Materialien" — AUCH wenn Lernperspektive erkennbar ("ich verstehe nicht", P-SL). (3) INT-W-03a NUR bei generischer Themensuche ohne Medientyp. (4) INT-W-03b für Lehrkraft mit Fach+Klasse. KEIN INT-W-03a wenn Medientyp explizit genannt!' },
           intent_label:        { type: 'string', description: 'Label des Intent' },
           intent_confidence:   { type: 'number', description: 'Konfidenz 0–1' },
           intent_degradation:  { type: 'boolean', description: 'Degradation aktiv wegen fehlender Preconditions?' },
@@ -114,7 +114,7 @@ const TOOLS: OpenAI.ChatCompletionTool[] = [
           content_type:      { type: 'string', description: 'Art des Inhalts: Materiallisten | Themenseiten | Fakten | Erklärungen | Routing | Feedback-Prompt' },
           content_max:       { type: 'number', description: 'Max. Anzahl Treffer (1–5)' },
           content_degradation: { type: 'boolean', description: 'Degradation aktiv?' },
-          tools_to_use:      { type: 'array', items: { type: 'string' }, description: 'MCP-Tools in Reihenfolge. SUCHSTRATEGIE (ZWINGEND): Bei jeder Materialsuche (INT-W-03a/b/c) IMMER zuerst [search_wlo_collections] — search_wlo_content NUR wenn Nutzer explizit Einzelmaterialien will ODER search_wlo_collections 0 Treffer liefert. Nie beide beim ersten Turn!' },
+          tools_to_use:      { type: 'array', items: { type: 'string' }, description: 'MCP-Tools in Reihenfolge. PFLICHT-ROUTING: (A) INFO-FRAGEN (INT-W-01/06/09, Fragen zu WLO/ItsJointly/edu-sharing/BIRD/GWDG): NUR [get_wirlernenonline_info etc.] — KEIN search_wlo_collections! (B1) MEDIENTYP explizit genannt (Videos, Arbeitsblätter, Quizze, Podcasts, interaktive Übungen): [lookup_wlo_vocabulary(lrt), search_wlo_content] mit learningResourceType-Filter — KEIN search_wlo_collections! (B2) THEMENSUCHE ohne Medientyp (INT-W-03a/b): IMMER zuerst [search_wlo_collections]. (C) LERNPFAD: [generate_learning_path]. Niemals B1 und B2 mischen!' },
           tools_reasoning:   { type: 'string', description: 'Warum diese Tools' },
         },
         required: ['pattern_id','style_notes','content_type','content_max','content_degradation','tools_to_use'],
@@ -122,15 +122,16 @@ const TOOLS: OpenAI.ChatCompletionTool[] = [
     },
   },
   // MCP tools
-  { type: 'function', function: { name: 'search_wlo_collections', description: 'Sucht Themenseiten/Sammlungen (WLO MCP)', parameters: { type: 'object', properties: { query: { type: 'string' }, educationLevel: { type: 'string' } }, required: ['query'] } } },
-  { type: 'function', function: { name: 'search_wlo_content',     description: 'Sucht konkrete Bildungsmaterialien (WLO MCP)', parameters: { type: 'object', properties: { query: { type: 'string' }, educationLevel: { type: 'string' } }, required: ['query'] } } },
-  { type: 'function', function: { name: 'get_collection_contents', description: 'Inhalte einer Sammlung abrufen (WLO MCP)', parameters: { type: 'object', properties: { collectionId: { type: 'string' }, skipCount: { type: 'number' } }, required: ['collectionId'] } } },
+  { type: 'function', function: { name: 'search_wlo_collections', description: 'Sucht Themenseiten/Sammlungen auf WLO. NUR für Sammlung/Themenseiten-Anfragen. NICHT für explizite Medientypen (Videos, Arbeitsblätter etc.) — dafür search_wlo_content verwenden!', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Suchbegriff, z.B. "Mathematik" oder "Klimawandel"' }, educationalContext: { type: 'string', description: 'Bildungsstufe: z.B. "Primarstufe", "Sekundarstufe I", "Grundschule"' }, discipline: { type: 'string', description: 'Fach: z.B. "Mathematik", "Biologie", "Deutsch"' } }, required: ['query'] } } },
+  { type: 'function', function: { name: 'search_wlo_content', description: 'Sucht konkrete Bildungsmaterialien/Inhalte auf WLO (Einzelmaterialien). VERWENDEN wenn: (1) Nutzer explizit nach Medientyp fragt (Videos, Arbeitsblätter, interaktive Übungen, Quizze, Podcasts), (2) Nutzer Lerninhalt zum Verstehen sucht (P-SL), (3) 0 Treffer bei search_wlo_collections. learningResourceType mit lookup_wlo_vocabulary URI befüllen!', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Suchbegriff, z.B. "Prozentrechnung" oder "Bruchrechnung Grundschule"' }, learningResourceType: { type: 'string', description: 'Ressourcentyp-URI aus lookup_wlo_vocabulary(lrt). Z.B. für Video erst lookup aufrufen! Direkte Labels: "Video", "Arbeitsblatt", "Interaktives Medium", "Unterrichtsplan"' }, discipline: { type: 'string', description: 'Fach: z.B. "Mathematik", "Biologie", "Deutsch"' }, educationalContext: { type: 'string', description: 'Bildungsstufe: z.B. "Primarstufe", "Sekundarstufe I"' }, userRole: { type: 'string', description: 'Zielgruppe: z.B. "Lerner/in", "Lehrer/in"' }, maxResults: { type: 'number', description: 'Max. Ergebnisse (1-8, Standard 6)' } }, required: ['query'] } } },
+  { type: 'function', function: { name: 'get_collection_contents', description: 'Inhalte (Lernmaterialien) einer WLO-Sammlung abrufen. Aufrufen wenn Nutzer fragt "Was ist in dieser Sammlung?" oder "Zeig mir die Materialien dazu".', parameters: { type: 'object', properties: { nodeId: { type: 'string', description: 'Node-ID der Sammlung (aus vorherigen Suchergebnissen)' }, contentFilter: { type: 'string', enum: ['files', 'folders', 'both'], description: 'files = Lernmaterialien (Default), folders = Untersammlungen' }, maxResults: { type: 'number', description: 'Max. Ergebnisse, Default 6' } }, required: ['nodeId'] } } },
+  { type: 'function', function: { name: 'generate_learning_path', description: 'Erstellt einen strukturierten Lernpfad aus den Inhalten einer WLO-Sammlung. AUFRUFEN wenn Nutzer explizit nach Lernpfad, Unterrichtsplanung, Stundenverlauf, didaktischer Sequenz oder strukturierten Materialien fragt.', parameters: { type: 'object', properties: { nodeId: { type: 'string', description: 'Node-ID der WLO-Sammlung' }, title: { type: 'string', description: 'Titel/Thema der Sammlung' } }, required: ['nodeId', 'title'] } } },
   { type: 'function', function: { name: 'get_node_details',        description: 'Detailmetadaten für eine Node-ID (WLO MCP)', parameters: { type: 'object', properties: { nodeId: { type: 'string' } }, required: ['nodeId'] } } },
-  { type: 'function', function: { name: 'get_wirlernenonline_info',    description: 'Infos von WLO-Projektwebseite (WLO MCP)', parameters: { type: 'object', properties: { query: { type: 'string' } }, required: [] } } },
-  { type: 'function', function: { name: 'get_edu_sharing_network_info', description: 'Infos edu-sharing-network.org (WLO MCP)', parameters: { type: 'object', properties: { query: { type: 'string' } }, required: [] } } },
-  { type: 'function', function: { name: 'get_edu_sharing_product_info', description: 'Infos edu-sharing.com Produkt (WLO MCP)',  parameters: { type: 'object', properties: { query: { type: 'string' } }, required: [] } } },
-  { type: 'function', function: { name: 'get_metaventis_info',    description: 'Infos metaventis.com (WLO MCP)', parameters: { type: 'object', properties: { query: { type: 'string' } }, required: [] } } },
-  { type: 'function', function: { name: 'lookup_wlo_vocabulary',  description: 'Gültige Filterwerte: Bildungsstufe, Fach, Ressourcentyp (WLO MCP)', parameters: { type: 'object', properties: { field: { type: 'string' } }, required: [] } } },
+  { type: 'function', function: { name: 'get_wirlernenonline_info',    description: 'Infos von WirLernenOnline (WLO) Webseite. AUFRUFEN bei Fragen zu: WLO, wirlernenonline.de, OER-Portal, Fachportale (z.B. Informatik, Mathematik), Qualitätssicherung, Quellenerschließung, Mitmachen, Fachredaktion, OER-Statistiken, WLO Plug-ins, GWDG (als WLO-Betreiber), Projektinfos zu WLO. Mehrsprachige Navigation: ohne path = Startseite, dann Unterseite wählen.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Unterseite, z.B. "/fachportale/informatik". Leer lassen für Startseite.' }, maxLength: { type: 'number', description: 'Max. Zeichen (Standard 8000)' } }, required: [] } } },
+  { type: 'function', function: { name: 'get_edu_sharing_network_info', description: 'Infos von edu-sharing-network.org. AUFRUFEN bei Fragen zu: ITsJOINTLY, JOINTLY, BIRD, Bildungsraum Digital, OER-Community, Vernetzung, OER- & IT-Sommercamp, Hackathon, offene Bildung, edu-sharing Netzwerk, Community-Projekte. ItsJointly ist ein JOINTLY-Projekt auf dieser Seite.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Unterseite, z.B. "/projekte/itsjointly". Leer lassen für Startseite.' }, maxLength: { type: 'number' } }, required: [] } } },
+  { type: 'function', function: { name: 'get_edu_sharing_product_info', description: 'Infos von edu-sharing.com (Software-Produkt). AUFRUFEN bei Fragen zu: edu-sharing Software, Open Source Repository, Bildungscloud, Suchmaschine, Moodle-Integration, Tools & Plugins, API, Dokumentation, Demo, Downloads, GWDG-Betrieb, Hosting, Architektur.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Unterseite, z.B. "/features". Leer lassen für Startseite.' }, maxLength: { type: 'number' } }, required: [] } } },
+  { type: 'function', function: { name: 'get_metaventis_info',    description: 'Infos von metaventis.com. AUFRUFEN bei Fragen zu: metaVentis GmbH, edu-sharing Kernentwickler, Landes-Schulcloud, IDM-Landeskonzepte, Autoren- & Redaktionslösung, IT-Partner für F&E-Projekte, GWDG-Kooperation, Firmenwissen & E-Learning.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Unterseite. Leer lassen für Startseite.' }, maxLength: { type: 'number' } }, required: [] } } },
+  { type: 'function', function: { name: 'lookup_wlo_vocabulary',  description: 'Gültige Filterwerte nachschlagen: Bildungsstufe (educationalContext), Fach (discipline), Zielgruppe (userRole), Lernressourcentyp (lrt)', parameters: { type: 'object', properties: { vocabulary: { type: 'string', enum: ['educationalContext','discipline','userRole','lrt'], description: 'Welches Vokabular: educationalContext | discipline | userRole | lrt' } }, required: ['vocabulary'] } } },
 ];
 
 // ── System prompt ─────────────────────────────────────────────────────────────
@@ -183,13 +184,14 @@ ${stateConfig ? `Ziel: ${stateConfig.goal}\nBot-Fokus: ${stateConfig.botFocus}` 
   · INT-W-03b (Unterrichtsmaterial suchen, Fach+Klasse bekannt) → state-5
   · INT-W-03c (Lerninhalt suchen, Thema bekannt) → state-5
   · INT-W-04 (Feedback) → state-9
-  · INT-W-05 (Routing Redaktion) → state-10
+  · INT-W-05 (Redaktions-Recherche) → state-10
   · INT-W-06 (Faktenfragen) → state-3
   · INT-W-07 (Material herunterladen) → state-5 oder state-6
   · INT-W-08 (Evaluieren) → state-9
   · INT-W-09 (Reporting) → state-3
 - Nachdem Suchergebnisse präsentiert wurden → state-6 oder state-8 (wenn Lerner)
 - Wenn Nutzer weiter verfeinert/fragt → state-7
+- P-RED nach Suchergebnissen → state-6 oder state-10 (redaktionelle Einordnung)
 
 ## Signale bisher im Gespräch
 ${signalHints}
@@ -199,10 +201,18 @@ ${ctxEntries || '(noch nichts bekannt)'}
 
 ## Sammlungs-Regel (WICHTIG für get_collection_contents)
 - Wenn Nutzer Inhalte einer Sammlung abrufen will die zuvor gefunden wurde:
-  1. Suche im Gesprächsverlauf nach der zuletzt verwendeten Collection-ID/Node-ID
-  2. Falls keine ID bekannt → erst search_wlo_collections mit dem Sammlungsnamen aufrufen
-  3. Dann get_collection_contents mit der gefundenen ID aufrufen
+  1. Nutze zuerst last_collection_id aus "Bekannter Inhalts-Kontext" falls vorhanden
+  2. Sonst: Suche im Gesprächsverlauf nach der zuletzt genannten Node-ID
+  3. Falls keine ID bekannt → erst search_wlo_collections mit dem Sammlungsnamen aufrufen, dann get_collection_contents
 - NIEMALS "ID nicht bekannt" als Fehler zurückgeben — immer erst neu suchen!
+- Bei get_collection_contents: Parameter heißt nodeId (nicht collectionId!)
+
+## Lernpfad & Unterrichtsplanung (ZWINGEND)
+- Wenn Nutzer nach **Lernpfad, Unterrichtsplanung, Stundenverlauf, didaktischer Sequenz** oder strukturierten Materialien fragt:
+  1. Falls last_collection_id bekannt → sofort \`generate_learning_path\` mit nodeId + title aufrufen
+  2. Falls keine Sammlung bekannt → erst \`search_wlo_collections\` → dann \`generate_learning_path\`
+  3. NIEMALS selbst einen Lernpfad erfinden — immer aus echten WLO-Materialien via generate_learning_path
+  4. Das Tool gibt die Materialien zurück UND einen Prompt — daraus die Lernpfad-Antwort formulieren
 ${personaSnippet}
 ## Guardrails (unveränderlich)
 - Nie blockieren — fehlt Precondition → Degradation, nie gar nicht antworten
@@ -211,16 +221,25 @@ ${personaSnippet}
 - Keine Inhalte erfinden — nur was MCP zurückgibt
 - Links als Markdown [Text](URL) formatieren
 - Antwort auf Deutsch
-- Kein Suche-Angebot bei Persona P-VER, P-RED (außer Intent erlaubt es)
+- Kein Suche-Angebot bei Persona P-VER (außer Intent INT-W-06/09 erlaubt es)
+- P-RED darf und soll suchen — search_wlo_collections ist der Hauptweg für Redakteur:innen
+
+## Info-Tool-Routing (ZWINGEND bei Projekt- und Plattformfragen)
+Fragen zu diesen Themen → IMMER das passende Web-Tool aufrufen, NIE aus dem Kopf antworten:
+- WLO, wirlernenonline.de, OER-Portal, Fachportale, Qualitätssicherung, GWDG (als WLO-Betreiber) → get_wirlernenonline_info
+- ItsJointly, ITsJOINTLY, JOINTLY, BIRD, Bildungsraum Digital, OER-Community, Hackathon, Sommercamp → get_edu_sharing_network_info
+- edu-sharing Software, Open Source, Repository, Bildungscloud, Moodle-Integration, API, Hosting → get_edu_sharing_product_info
+- metaVentis, Landes-Schulcloud, IDM-Konzepte, Redaktionslösung, GWDG-Kooperation → get_metaventis_info
+- GWDG allgemein: get_wirlernenonline_info (WLO-Betrieb) UND/ODER get_edu_sharing_product_info (Software-Hosting)
+- Mehrere Aspekte? → beide Tools in tools_to_use aufführen
+- Navigation: zuerst ohne path aufrufen → Startseite lesen → passende Unterseite mit path erneut aufrufen
 
 ## Suchstrategie (ZWINGEND für alle Materialsuchen)
-1. **Erster Turn mit Materialanfrage:** NUR search_wlo_collections → Themenseiten/Sammlungen als Einstieg
-2. **Wenn Nutzer auf Sammlung klickt ("Inhalte"):** Wird automatisch per UI geladen — KEIN weiteres MCP nötig
-3. **search_wlo_content NUR wenn:**
-   a. Nutzer fragt explizit nach Einzelmaterialien/Videos/Arbeitsblättern
-   b. ODER search_wlo_collections lieferte 0 Treffer
-   c. ODER Nutzer hat Sammlungsergebnis gesehen und fragt nach mehr
-4. NIEMALS beide Tools gleichzeitig im ersten Turn!
+1. **Medientyp explizit genannt** (Videos, Arbeitsblätter, Quizze, Podcasts, interaktive Übungen): lookup_wlo_vocabulary(lrt) aufrufen → URI ermitteln → search_wlo_content mit learningResourceType. KEIN search_wlo_collections!
+2. **Themensuche ohne Medientyp:** NUR search_wlo_collections → Themenseiten/Sammlungen als Einstieg
+3. **Wenn Nutzer auf Sammlung klickt ("Inhalte"):** Wird automatisch per UI geladen — KEIN weiteres MCP nötig
+4. **search_wlo_content zusätzlich NUR wenn:** search_wlo_collections lieferte 0 Treffer ODER Nutzer fragt nach Einzelmaterialien nach Sammlungsanzeige
+5. NIEMALS search_wlo_collections bei explizitem Medientyp!
 
 ## Sofort-Suche-Regel (ZWINGEND)
 - Bei INT-W-03a/b/c (Themenseite/Material/Lerninhalt suchen): **SOFORT search_wlo_collections aufrufen** — KEIN Soft Probing, KEIN Nachfragen zur Persona, KEINE Rückfragen vor dem ersten Suchergebnis
@@ -273,6 +292,7 @@ export async function POST(req: Request) {
         const MCP_TOOLS = new Set(['search_wlo_collections','search_wlo_content','get_collection_contents',
           'get_node_details','get_wirlernenonline_info','get_edu_sharing_network_info',
           'get_edu_sharing_product_info','get_metaventis_info','lookup_wlo_vocabulary']);
+        const LP_TOOLS  = new Set(['generate_learning_path']);
 
         // ── Helper: process a single classify_input call ──────────────────────
         function processClassify(tc: OpenAI.ChatCompletionMessageToolCall): string {
@@ -358,6 +378,42 @@ export async function POST(req: Request) {
           return JSON.stringify({ ok: true, output, template: pat?.coreRule ?? '' });
         }
 
+        // ── Helper: execute generate_learning_path ────────────────────────────
+        async function executeGenerateLearningPath(tc: OpenAI.ChatCompletionMessageToolCall): Promise<OpenAI.ChatCompletionToolMessageParam> {
+          const args = JSON.parse(tc.function.arguments || '{}') as { nodeId?: string; title?: string };
+          const nodeId = args.nodeId ?? '';
+          const title  = args.title  ?? 'Sammlung';
+          emit({ type: 'debug', step: 'mcp_call', data: { id: tc.id, tool: 'generate_learning_path', args } });
+          try {
+            const raw = await callMcp('get_collection_contents', { nodeId, contentFilter: 'files', maxResults: 12 });
+            const cards = parseWloCards(raw, 'content');
+            if (cards.length > 0) emit({ type: 'cards', data: cards });
+            emit({ type: 'debug', step: 'mcp_result', data: { id: tc.id, result: `${cards.length} Inhalte geladen für Lernpfad` } });
+            if (cards.length === 0) {
+              return { role: 'tool', tool_call_id: tc.id, content: `Keine Inhalte in der Sammlung „${title}" gefunden. Bitte andere Sammlung wählen.` };
+            }
+            const materialList = cards.map((c, i) => {
+              const types = c.learningResourceTypes.length ? ` [${c.learningResourceTypes.join(', ')}]` : '';
+              const desc  = c.description ? ` – ${c.description.slice(0, 100)}` : '';
+              const url   = c.url || c.wloUrl;
+              return `${i + 1}. **${c.title}**${types}${desc}${url ? ` → ${url}` : ''}`;
+            }).join('\n');
+            return {
+              role: 'tool',
+              tool_call_id: tc.id,
+              content:
+                `Sammlung „${title}" enthält ${cards.length} Lernmaterialien:\n\n${materialList}\n\n` +
+                `Erstelle jetzt einen pädagogisch strukturierten Lernpfad (z. B. Einstieg → Erarbeitung → Vertiefung → Abschluss/Anwendung). ` +
+                `Nenne pro Phase 1–2 konkrete Materialien aus der Liste mit Markdown-Link [Titel](URL). ` +
+                `Antworte auf Deutsch, prägnant und direkt einsetzbar.`,
+            };
+          } catch (e: unknown) {
+            const errMsg = e instanceof Error ? e.message : String(e);
+            emit({ type: 'debug', step: 'mcp_error', data: { id: tc.id, error: errMsg } });
+            return { role: 'tool', tool_call_id: tc.id, content: `Fehler beim Laden der Sammlung: ${errMsg}` };
+          }
+        }
+
         // ── Helper: execute a single MCP call (async) ─────────────────────────
         async function executeMcp(tc: OpenAI.ChatCompletionMessageToolCall): Promise<OpenAI.ChatCompletionToolMessageParam> {
           const args = JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>;
@@ -397,11 +453,15 @@ export async function POST(req: Request) {
               content: tc.function.name === 'classify_input' ? processClassify(tc) : processSelect(tc),
             }));
 
+          // generate_learning_path: run before regular MCP (sequential, may emit cards)
+          const lpCalls  = allCalls.filter(tc => LP_TOOLS.has(tc.function.name));
+          const lpResults = await Promise.all(lpCalls.map(executeGenerateLearningPath));
+
           // MCP calls: run concurrently with Promise.all
           const mcpCalls = allCalls.filter(tc => MCP_TOOLS.has(tc.function.name));
           const mcpResults = await Promise.all(mcpCalls.map(executeMcp));
 
-          messages.push(...syncResults, ...mcpResults);
+          messages.push(...syncResults, ...lpResults, ...mcpResults);
 
           response = await client.chat.completions.create({
             model: 'gpt-4.1-mini',

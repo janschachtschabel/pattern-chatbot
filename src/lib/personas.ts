@@ -76,13 +76,14 @@ export const PERSONAS: Persona[] = [
   },
   {
     id: 'P-RED', label: 'Autor/in · Redakteur:in', emoji: '✏️',
-    shortDesc: 'Inhalte erstellen oder hochladen, Routing zum Autor:innen-Flow',
-    tonality: 'Einladend · motivierend · Mehrwert',
+    shortDesc: 'WLO-Inhalte redaktionell erkunden, kuratieren und thematisch einordnen',
+    tonality: 'Einladend · kompetent · inhaltsorientiert',
     color: 'bg-purple-900/40 border-purple-700',
     detectionHints: [
-      'ich möchte hochladen', 'eigene Materialien', 'Inhalte einstellen',
-      'Autor', 'Redaktion', 'Material veröffentlichen', 'auf WLO hochladen',
+      'ich bin Redakteur', 'ich kuratiere', 'ich möchte hochladen', 'eigene Materialien',
+      'Inhalte einstellen', 'Autor', 'Redaktion', 'Material veröffentlichen',
       'ich habe Materialien erstellt', 'meine OER teilen', 'beitragen',
+      'Inhalte prüfen', 'Sammlungen erkunden', 'OER kuratieren', 'was gibt es zu Thema',
     ],
   },
   {

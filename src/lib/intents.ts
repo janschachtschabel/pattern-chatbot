@@ -8,7 +8,7 @@ export const INTENTS: Intent[] = [
     cluster: 'info',
     preconditions: ['Persona erkannt'],
     degradation: 'Allgemeinen Plattform-Überblick geben (statischer Content)',
-    tools: ['get_wirlernenonline_info', 'get_edu_sharing_product_info'],
+    tools: ['get_wirlernenonline_info', 'get_edu_sharing_network_info', 'get_edu_sharing_product_info', 'get_metaventis_info'],
   },
   {
     id: 'INT-W-02', label: 'Soft Probing',
@@ -56,13 +56,13 @@ export const INTENTS: Intent[] = [
     tools: [],
   },
   {
-    id: 'INT-W-05', label: 'Routing Redaktion',
-    description: 'Weiterleitung an R-00-Flow für Autor:innen',
+    id: 'INT-W-05', label: 'Redaktions-Recherche',
+    description: 'WLO-Inhalte für Redaktion erkunden — Sammlungen finden, Themengebiete einschätzen, Lücken identifizieren',
     mainPersonas: ['P-RED'],
-    cluster: 'routing',
-    preconditions: ['Persona = P-RED erkannt'],
-    degradation: 'Routing-Hinweis geben',
-    tools: [],
+    cluster: 'discovery',
+    preconditions: ['Persona = P-RED erkannt', 'Thema oder Fachgebiet (grob) bekannt'],
+    degradation: 'Populäre WLO-Sammlungen als redaktionellen Einstieg zeigen',
+    tools: ['search_wlo_collections', 'get_collection_contents'],
   },
   {
     id: 'INT-W-06', label: 'Faktenfragen',
@@ -71,7 +71,7 @@ export const INTENTS: Intent[] = [
     cluster: 'info',
     preconditions: ['Persona bekannt'],
     degradation: 'Allgemeine WLO-Fakten aus statischem Content',
-    tools: ['get_wirlernenonline_info', 'get_metaventis_info'],
+    tools: ['get_wirlernenonline_info', 'get_edu_sharing_network_info', 'get_edu_sharing_product_info', 'get_metaventis_info'],
   },
   {
     id: 'INT-W-07', label: 'Material herunterladen',
@@ -98,7 +98,7 @@ export const INTENTS: Intent[] = [
     cluster: 'meta',
     preconditions: ['Persona bekannt'],
     degradation: 'Verfügbare Statistiken aus WLO-Projektseite zeigen',
-    tools: ['get_wirlernenonline_info', 'get_edu_sharing_network_info'],
+    tools: ['get_wirlernenonline_info', 'get_edu_sharing_network_info', 'get_edu_sharing_product_info', 'get_metaventis_info'],
   },
 ];
 

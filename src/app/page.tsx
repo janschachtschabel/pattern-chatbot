@@ -156,9 +156,16 @@ export default function Home() {
             }
 
             if (event.type === 'cards') {
+              // Track last shown collection so LLM can reference it next turn
+              const collectionCards = event.data.filter(c => c.nodeType === 'collection');
+              if (collectionCards.length > 0) {
+                contentContextRef.current.last_collection_id    = collectionCards[0].nodeId;
+                contentContextRef.current.last_collection_title = collectionCards[0].title;
+              }
               setMessages(prev =>
                 prev.map(m => m.id === botId ? { ...m, wloCards: event.data } : m)
               );
+              setDebug(prev => ({ ...prev, contentContext: { ...contentContextRef.current } }));
             }
 
             if (event.type === 'done') {
